@@ -48,11 +48,11 @@ def find_executable(name_or_path: str) -> str | None:
 
 
 def multiwfn_input(fragment1: str, fragment2: str) -> str:
-    """Menu sequence used for Multiwfn 2026.1.12 IGMH interfragment analysis.
+    """Default menu sequence for Multiwfn IGMH interfragment analysis.
 
-    Multiwfn menus can change between releases. If this sequence fails for a
-    different build, run Multiwfn interactively once and save the working menu
-    sequence with --multiwfn-input-template.
+    This sequence was verified with the TS3a/TS3b example workflow. Record the
+    actual Multiwfn version used from your local Multiwfn banner or generated
+    logs. Other Multiwfn versions/builds may require a different menu sequence.
     """
     lines = [
         "20",
@@ -240,7 +240,7 @@ def convert_image(src: Path, dst: Path, dry_run: bool) -> None:
         if not magick:
             raise RuntimeError(
                 "Pillow is not installed and ImageMagick 'magick' was not found. "
-                "Install Pillow with 'python -m pip install pillow' or convert the TGA manually."
+                "Install Pillow with 'pip install -r requirements.txt' or convert the TGA manually."
             )
         subprocess.run([magick, str(src), str(dst)], check=True)
         return
@@ -263,7 +263,7 @@ def combine_panels(
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError as exc:
-        raise RuntimeError("Pillow is required to combine panels. Install with 'python -m pip install pillow'.") from exc
+        raise RuntimeError("Pillow is required to combine panels. Install with 'pip install -r requirements.txt'.") from exc
 
     left = Image.open(left_png).convert("RGB")
     right = Image.open(right_png).convert("RGB")
@@ -356,7 +356,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-multiwfn", action="store_true", help="Use existing cube files in output/*_IGMH_files.")
     parser.add_argument("--skip-render", action="store_true", help="Skip VMD rendering and only check/generate cubes.")
     parser.add_argument("--overwrite", action="store_true", help="Rerun Multiwfn even if cube files already exist.")
-    parser.add_argument("--no-panel-labels", action="store_true", help="Do not add TS3a/TS3b titles to the combined clean figure.")
+    parser.add_argument("--no-panel-labels", action="store_true", help="Only write the no-text clean comparison; skip the TS3a/TS3b labeled comparison.")
     parser.add_argument("--dry-run", action="store_true", help="Print planned commands without running external programs.")
     args = parser.parse_args(argv)
 
@@ -419,16 +419,27 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.skip_render and len(rendered_pngs) >= 2:
         labels = list(rendered_pngs)
-        combined = figures_dir / f"{labels[0]}_vs_{labels[1]}_IGMH_clean.png"
+        clean_combined = figures_dir / f"{labels[0]}_vs_{labels[1]}_IGMH_clean.png"
         combine_panels(
             rendered_pngs[labels[0]],
             rendered_pngs[labels[1]],
-            combined,
+            clean_combined,
             labels[0],
             labels[1],
-            add_labels=not args.no_panel_labels,
+            add_labels=False,
             dry_run=args.dry_run,
         )
+        if not args.no_panel_labels:
+            labeled_combined = figures_dir / f"{labels[0]}_vs_{labels[1]}_IGMH_labeled.png"
+            combine_panels(
+                rendered_pngs[labels[0]],
+                rendered_pngs[labels[1]],
+                labeled_combined,
+                labels[0],
+                labels[1],
+                add_labels=True,
+                dry_run=args.dry_run,
+            )
 
     print("[done] Workflow completed.")
     return 0

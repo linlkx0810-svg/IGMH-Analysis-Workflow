@@ -1,74 +1,105 @@
-# IGMH Workflow: Multiwfn → VMD → Publication-Quality Figure
+# IGMH Analysis Workflow
 
-This workflow describes how to perform an **IGMH (Independent Gradient Model based on Hirshfeld partition)** analysis from Gaussian formatted checkpoint files and generate clean, publication-/presentation-quality molecular figures using **Multiwfn + VMD/Tachyon**.
+![IGMH comparison](figures/TS3a_vs_TS3b_IGMH_clean.png)
 
-The example below was developed for comparing two transition structures, `TS3a` and `TS3b`.
+This repository documents a reproducible workflow for **IGMH (Independent Gradient Model based on Hirshfeld partition)** analysis from Gaussian formatted checkpoint files and for clean molecular visualization with **Multiwfn** and **VMD/Tachyon**.
 
----
+The numerical workflow is generalizable. The bundled camera, panel crop, and screen-translation settings are optimized for the `TS3a`/`TS3b` example and may require adjustment for other molecular systems.
 
-## Semi-automatic usage
+## Scope
 
-This repository includes a Python wrapper, `run_workflow.py`, for a semi-automatic
-workflow. It does not calculate or modify molecular structures itself. It only
-checks files, launches Multiwfn, launches VMD/Tachyon, converts images, and
-combines the clean panels.
+The workflow is:
 
-### Quick start
+```text
+Gaussian .fchk -> Multiwfn IGMH cubes -> VMD/Tachyon rendering -> clean comparison figure
+```
 
-1. Put your Gaussian formatted checkpoint files in `input/`:
+`run_workflow.py` does not calculate, regenerate, interpolate, or modify molecular structures. It checks input files, launches Multiwfn, launches VMD/Tachyon, converts rendered images, and combines panels.
+
+## Quick Start
+
+1. Put Gaussian formatted checkpoint files in `input/`:
 
 ```text
 input/TS3a_SP_PCM.fchk
 input/TS3b_SP_PCM.fchk
 ```
 
-2. Make sure `Multiwfn` and `vmd` are available in your terminal `PATH`.
+2. Install the Python dependency used for image conversion and panel assembly:
 
-3. Run:
+```bash
+pip install -r requirements.txt
+```
+
+3. Make sure `Multiwfn` and `vmd` are available in your terminal `PATH`.
+
+4. Run:
 
 ```bash
 python run_workflow.py
 ```
 
-The default workflow uses:
+Default fragment definitions for the example:
 
 ```text
+TS3a:
 Fragment 1 = atoms 1-72
 Fragment 2 = atoms 73-94
-delta-g_inter isovalue = 0.005 a.u.
-sign(lambda2)rho color range = -0.05 to +0.05 a.u.
+
+TS3b:
+Fragment 1 = atoms 1-72
+Fragment 2 = atoms 73-94
 ```
 
-Expected clean outputs:
+Default visualization settings:
+
+```text
+Quantity visualized: delta-g_inter
+Initial delta-g_inter isovalue: 0.005 a.u.
+Surface coloring: sign(lambda2)rho
+Example shared sign(lambda2)rho range: -0.05 to +0.05 a.u.
+Blue = attractive
+Green = weak / van der Waals
+Red = repulsive / steric
+```
+
+## Outputs
+
+Individual clean panels:
 
 ```text
 figures/TS3a_IGMH_clean.png
 figures/TS3b_IGMH_clean.png
+```
+
+Combined clean comparison with no text:
+
+```text
 figures/TS3a_vs_TS3b_IGMH_clean.png
 ```
 
-Generated Multiwfn cube files and logs are written to:
+Combined comparison with only panel titles:
+
+```text
+figures/TS3a_vs_TS3b_IGMH_labeled.png
+```
+
+Multiwfn numerical outputs, cube files, and logs:
 
 ```text
 output/TS3a_IGMH_files/
 output/TS3b_IGMH_files/
 ```
 
-### Useful options
+## Custom Fragments
 
-Use explicit executable paths if they are not in `PATH`:
-
-```bash
-python run_workflow.py --multiwfn "C:/path/to/Multiwfn.exe" --vmd "C:/path/to/vmd.exe"
-```
-
-Customize the same fragment definition for all systems:
+Use the same fragment definition for all systems:
 
 ```bash
-python run_workflow.py --fragment1 1-60 --fragment2 61-94
+python run_workflow.py --fragment1 1-72 --fragment2 73-94
 ```
 
-Customize fragments separately for each system by editing `parameters/fragments.csv`:
+Or customize fragments separately by editing `parameters/fragments.csv`:
 
 ```csv
 system,fragment1,fragment2,center_selection
@@ -82,541 +113,110 @@ Then run:
 python run_workflow.py --fragments-file parameters/fragments.csv
 ```
 
-The optional `center_selection` column is a VMD atom selection used only for
-render centering. Leave it blank for the TS3a/TS3b default view. For another
-system, you may use a VMD selection such as:
+The optional `center_selection` column is passed to VMD and is used only for render centering. Multiwfn atom ranges are one-based, while VMD `index` selections are zero-based.
 
-```text
-index 0 to 71 72 to 93
-```
-
-Remember that Multiwfn atom ranges are one-based, while VMD `index` selections
-are zero-based.
-
-If you want the script to automatically center each rendering on `fragment1`
-plus `fragment2` when `center_selection` is blank, add:
+To center each rendering on fragment 1 plus fragment 2 when `center_selection` is blank:
 
 ```bash
 python run_workflow.py --fragments-file parameters/fragments.csv --auto-center-fragments
 ```
 
-Render from existing cube files without rerunning Multiwfn:
+## Running from Existing Cubes
+
+To render existing Multiwfn cube files without rerunning Multiwfn:
 
 ```bash
 python run_workflow.py --skip-multiwfn
 ```
 
-Use a custom Multiwfn menu-input template:
-
-```bash
-python run_workflow.py --multiwfn-input-template parameters/multiwfn_igmh_interfragment.inp
-```
-
-Dry-run the commands before launching external software:
+To dry-run the external commands first:
 
 ```bash
 python run_workflow.py --dry-run
 ```
 
-> Multiwfn menu indices may vary between versions. The included template was
-> prepared from the TS3a/TS3b example workflow. If your Multiwfn version uses a
-> different menu layout, run Multiwfn interactively once, save the corresponding
-> menu sequence, and pass it with `--multiwfn-input-template`.
-
----
-
-## 1. Required software
-
-* Gaussian formatted checkpoint file (`.fchk`)
-* Multiwfn
-* VMD
-* Tachyon renderer included with VMD
-
-Example input files:
-
-```text
-TS3a_SP_PCM.fchk
-TS3b_SP_PCM.fchk
-```
-
----
-
-## 2. Fragment definition
-
-For both TS3a and TS3b, the system was divided into two fragments:
-
-```text
-Fragment 1: atoms 1–72
-Fragment 2: atoms 73–94
-```
-
-In this system:
-
-```text
-Fragment 1 = catalyst / ligand framework
-Fragment 2 = substrate
-```
-
-Using the same fragment definition for both transition structures is essential for direct comparison.
-
----
-
-## 3. Load the wavefunction file in Multiwfn
-
-Start Multiwfn and load the `.fchk` file.
-
-Example:
+To use explicit executable paths:
 
 ```bash
-Multiwfn TS3a_SP_PCM.fchk
+python run_workflow.py --multiwfn "C:/path/to/Multiwfn.exe" --vmd "C:/path/to/vmd.exe"
 ```
 
-or launch Multiwfn first and select:
+## Multiwfn Menu Sequence
+
+The default menu input in `run_workflow.py` and `parameters/multiwfn_igmh_interfragment.inp` is a hard-coded sequence for the TS3a/TS3b IGMH interfragment example:
 
 ```text
-TS3a_SP_PCM.fchk
+20 -> 11 -> 2 -> fragment1 -> fragment2 -> ...
 ```
 
-Repeat later for:
+This sequence was verified with the example workflow used to build this repository. Record the actual Multiwfn version used from your local Multiwfn banner or generated logs. Other Multiwfn versions or builds may require a different menu sequence.
 
-```text
-TS3b_SP_PCM.fchk
+If the menu layout differs, run Multiwfn interactively once, save the working menu sequence, and pass it with:
+
+```bash
+python run_workflow.py --multiwfn-input-template parameters/multiwfn_igmh_interfragment.inp
 ```
 
----
+## Rendering Notes
 
-## 4. Enter IGMH analysis
-
-In Multiwfn, enter the function corresponding to:
+The VMD/Tachyon rendering preset in `scripts/render_IGMH.tcl` uses:
 
 ```text
-IGMH analysis
+Per-panel image size: 2400 x 2400 px
+Projection: Orthographic
+delta-g_inter isovalue: 0.005 a.u.
+sign(lambda2)rho color range: -0.05 to +0.05 a.u.
+Molecular representation: CPK 0.500000 0.170000 32.000000 28.000000
+IGMH material opacity: 0.60
+Background: white
 ```
 
-or:
+For other systems, keep the numerical settings consistent between compared structures, but adjust the camera and crop only as needed for a clear view.
+
+## Recommended Output Structure
 
 ```text
-Independent Gradient Model based on Hirshfeld partition
+IGMH-Analysis-Workflow/
+|-- input/
+|   |-- TS3a_SP_PCM.fchk
+|   `-- TS3b_SP_PCM.fchk
+|-- output/
+|   |-- TS3a_IGMH_files/
+|   `-- TS3b_IGMH_files/
+|-- parameters/
+|   |-- fragments.csv
+|   |-- IGMH_parameters.txt
+|   `-- multiwfn_igmh_interfragment.inp
+|-- scripts/
+|   `-- render_IGMH.tcl
+|-- figures/
+|   |-- TS3a_IGMH_clean.png
+|   |-- TS3b_IGMH_clean.png
+|   |-- TS3a_vs_TS3b_IGMH_clean.png
+|   `-- TS3a_vs_TS3b_IGMH_labeled.png
+|-- analysis/
+|   `-- example_key_contacts.csv
+|-- run_workflow.py
+|-- requirements.txt
+`-- README.md
 ```
 
-> Note: the exact menu number may differ between Multiwfn versions/builds.
-> Follow the menu text rather than relying on a fixed numerical menu index.
+## Analysis Folder
 
-Choose the analysis of:
+`analysis/example_key_contacts.csv` is an optional manually curated example of key contacts in the TS3a/TS3b case. It is **not** generated by `run_workflow.py`.
 
-```text
-interfragment interaction
-```
+The main automated workflow is Multiwfn cube generation plus VMD/Tachyon clean rendering.
 
-The quantity of primary interest is:
+## Reproducibility Checklist
 
-```text
-δg_inter
-```
-
-which visualizes the interaction between the two predefined fragments.
-
----
-
-## 5. Define the fragments
-
-Enter:
+Before comparing structures, confirm that both use the same:
 
 ```text
-Fragment 1:
-1-72
-```
-
-and:
-
-```text
-Fragment 2:
-73-94
-```
-
-Use exactly the same atom ranges for TS3a and TS3b.
-
----
-
-## 6. Generate IGMH grid data
-
-Generate the grid data required for visualization.
-
-For comparative analysis, use identical settings for TS3a and TS3b.
-
-A practical starting value for the IGMH isosurface is:
-
-```text
-δg_inter isovalue = 0.005 a.u.
-```
-
-The surface is colored according to:
-
-```text
-sign(λ2)ρ
-```
-
-Typical interpretation:
-
-```text
-Blue   = attractive interaction
-Green  = weak / van der Waals interaction
-Red    = repulsive / steric interaction
-```
-
-For consistent visualization, use the same color range for both structures.
-
-Example:
-
-```text
-sign(λ2)ρ range:
--0.05 to +0.05 a.u.
-```
-
----
-
-## 7. Export Multiwfn visualization data
-
-Export the relevant files generated by Multiwfn.
-
-Depending on the Multiwfn version, these may include files corresponding to:
-
-```text
-δg_inter cube/grid
-sign(λ2)ρ cube/grid
-molecular coordinates
-VMD visualization script
-```
-
-Keep all raw Multiwfn output files.
-
-Recommended directory structure:
-
-```text
-project/
-│
-├── TS3a_SP_PCM.fchk
-├── TS3b_SP_PCM.fchk
-│
-├── TS3a_IGMH_files/
-│   ├── ...
-│   └── ...
-│
-├── TS3b_IGMH_files/
-│   ├── ...
-│   └── ...
-│
-└── render_IGMH.tcl
-```
-
-Do not modify the original `.fchk` files.
-
----
-
-## 8. Load the IGMH data into VMD
-
-Open the Multiwfn-generated molecular and volumetric data in VMD.
-
-The IGMH surface should be generated from:
-
-```text
-δg_inter
-```
-
-and colored by:
-
-```text
-sign(λ2)ρ
-```
-
-For TS3a and TS3b, use the same:
-
-```text
-isosurface value
-color scale
-surface opacity
-atom representation
-bond thickness
-camera orientation
-projection
-zoom
-image resolution
-```
-
-This is critical for meaningful visual comparison.
-
----
-
-## 9. Molecular representation
-
-Use a clean **ball-and-stick / CPK-like representation**.
-
-The final figure should not look like either:
-
-```text
-an oversized space-filling model
-```
-
-or:
-
-```text
-an extremely thin wireframe
-```
-
-A balanced appearance works best.
-
-Recommended starting values in VMD:
-
-```text
-Sphere Scale ≈ 0.4–0.45
-Bond Radius  ≈ 0.14–0.16
-Sphere Resolution ≥ 24
-```
-
-These are visualization parameters only and can be adjusted slightly depending on the system.
-
-The important requirement is:
-
-```text
-TS3a and TS3b must use exactly the same representation parameters.
-```
-
----
-
-## 10. IGMH surface appearance
-
-Use moderate transparency so that both the interaction surface and molecular geometry remain visible.
-
-Recommended starting range:
-
-```text
-surface opacity ≈ 0.55–0.65
-```
-
-Avoid:
-
-```text
-fully opaque surfaces
-```
-
-because they can obscure the atoms beneath the interaction region.
-
-Also avoid extremely bright or neon-like rendering.
-
-The final surface should retain:
-
-```text
-Blue  → attractive
-Green → vdW / weak interaction
-Red   → repulsive
-```
-
-while maintaining a softer, publication-quality appearance.
-
----
-
-## 11. Camera and orientation
-
-For a TS3a / TS3b comparison, choose a viewing direction that exposes the:
-
-```text
-catalyst–substrate interaction region
-```
-
-Try to preserve the same general viewing direction between the two structures.
-
-Use the same:
-
-```text
-projection
-zoom
-visual molecular scale
-```
-
-Minor rotational adjustment is acceptable if required to prevent important interactions from being hidden.
-
-The objective is not mathematical identity of the camera matrices, but a chemically meaningful and visually comparable orientation.
-
----
-
-## 12. Framing
-
-The whole molecular system should remain visible.
-
-Recommended composition:
-
-```text
-molecule occupies ~70–80% of the panel
-```
-
-Leave a small white margin around the molecule.
-
-Avoid:
-
-```text
-cropped atoms
-large unused margins
-overly zoomed-in interaction regions
-```
-
-The catalyst–substrate interaction region should remain near the visual center.
-
----
-
-## 13. Background and lighting
-
-Use:
-
-```text
-white background
-```
-
-Avoid:
-
-```text
-axes
-bounding boxes
-VMD GUI elements
-strong shadows
-overexposed lighting
-```
-
-Reduce excessive brightness and glare.
-
-The molecular framework should have enough contrast to remain visible through the IGMH surface.
-
----
-
-## 14. High-quality rendering
-
-Do not use a normal screen capture as the final figure.
-
-Render the scene using:
-
-```text
-Tachyon
-```
-
-or another high-quality renderer available through VMD.
-
-Use:
-
-```text
-anti-aliasing
-high resolution
-white background
-```
-
-A useful minimum resolution for individual panels is:
-
-```text
-1600 × 1600 px
-```
-
-For a combined TS3a / TS3b figure:
-
-```text
-≥ 3000 px width
-```
-
-is recommended for presentation and publication use.
-
----
-
-## 15. Generate the clean unannotated figures
-
-First generate figures **without any text annotations**.
-
-Recommended output:
-
-```text
-TS3a_IGMH_clean.png
-TS3b_IGMH_clean.png
-TS3a_vs_TS3b_IGMH_clean.png
-```
-
-The clean figures should contain only:
-
-```text
-molecular structure
-IGMH surface
-white background
-```
-
-No interaction labels, arrows, distances, captions, or mechanistic conclusions should be embedded at this stage.
-
-This clean version can later be reused for:
-
-```text
-PowerPoint
-publication figures
-annotated mechanistic figures
-supplementary information
-```
-
----
-
-## 16. Side-by-side comparison
-
-For the combined figure:
-
-```text
-TS3a | TS3b
-```
-
-use:
-
-```text
-equal panel dimensions
-same visual molecular scale
-same atom size
-same bond radius
-same surface opacity
-same color scale
-same rendering quality
-```
-
-Do not stretch one molecular image independently from the other.
-
-The final comparison should reflect genuine structural and IGMH differences rather than differences caused by rendering parameters.
-
----
-
-## 17. Recommended output structure
-
-```text
-IGMH_TS3/
-│
-├── input/
-│   ├── TS3a_SP_PCM.fchk
-│   └── TS3b_SP_PCM.fchk
-│
-├── multiwfn/
-│   ├── TS3a_IGMH_files/
-│   └── TS3b_IGMH_files/
-│
-├── scripts/
-│   └── render_IGMH.tcl
-│
-├── figures/
-│   ├── TS3a_IGMH_clean.png
-│   ├── TS3b_IGMH_clean.png
-│   └── TS3a_vs_TS3b_IGMH_clean.png
-│
-└── README.md
-```
-
----
-
-## 18. Reproducibility checklist
-
-Before comparing TS3a and TS3b, confirm that both structures use the same:
-
-```text
-[ ] fragment definition
+[ ] fragment definitions
+[ ] Multiwfn version and menu sequence
 [ ] IGMH analysis method
-[ ] δg_inter isovalue
-[ ] sign(λ2)ρ color range
+[ ] delta-g_inter isovalue
+[ ] sign(lambda2)rho color range
 [ ] grid settings
 [ ] atom representation
 [ ] sphere scale
@@ -628,82 +228,36 @@ Before comparing TS3a and TS3b, confirm that both structures use the same:
 [ ] rendering resolution
 ```
 
-Only after these parameters are standardized should differences between the two IGMH surfaces be interpreted chemically.
+## Scientific Interpretation
 
----
+IGMH is a visualization and interaction-analysis method. The IGMH surface should not be treated as a direct interaction energy. Energetic preference between transition states should be established from quantum-chemical energy or free-energy calculations; IGMH can then help rationalize attractive contacts, dispersion interactions, steric repulsion, and catalyst-substrate pocket complementarity.
 
-## 19. Scientific interpretation
+## References
 
-IGMH is used here as a visualization and interaction-analysis tool.
+Please cite the relevant third-party software and methods when using this workflow:
 
-The IGMH surface itself should not be treated as a direct interaction energy.
+- Multiwfn software: T. Lu and F. Chen, "Multiwfn: A multifunctional wavefunction analyzer", *J. Comput. Chem.* **2012**, 33, 580-592. DOI: [10.1002/jcc.22885](https://doi.org/10.1002/jcc.22885).
+- Multiwfn current overview: T. Lu, "A comprehensive electron wavefunction analysis toolbox for chemists, Multiwfn", *J. Chem. Phys.* **2024**, 161, 082503. DOI: [10.1063/5.0216272](https://doi.org/10.1063/5.0216272).
+- IGMH method: T. Lu and Q. Chen, "Independent gradient model based on Hirshfeld partition: A new method for visual study of interactions in chemical systems", *J. Comput. Chem.* **2022**, 43, 539-555. DOI: [10.1002/jcc.26812](https://doi.org/10.1002/jcc.26812).
+- VMD: W. Humphrey, A. Dalke and K. Schulten, "VMD: Visual molecular dynamics", *J. Mol. Graph.* **1996**, 14, 33-38. DOI: [10.1016/0263-7855(96)00018-5](https://doi.org/10.1016/0263-7855(96)00018-5).
 
-In particular:
+Official Multiwfn website and documentation:
 
-```text
-larger δg_inter ≠ lower transition-state energy
-```
+- [Multiwfn official website](https://www.umsyar.com/multiwfn/)
+- [Multiwfn download and manual page](https://www.umsyar.com/multiwfn/download.html)
 
-The energetic preference between transition states should first be established from the quantum-chemical energy/free-energy calculations.
+## License
 
-IGMH can then be used to rationalize the origin of the preference in terms of:
+The MIT license applies to the original scripts and documentation in this repository. Multiwfn and VMD are third-party software distributed under their own terms.
 
-```text
-attractive contacts
-dispersion interactions
-steric repulsion
-catalyst–substrate pocket complementarity
-```
-
----
-
-## 20. Example settings used for the TS3a / TS3b workflow
-
-Fragment definition:
+Suggested GitHub repository description:
 
 ```text
-TS3a:
-Fragment 1 = 1–72
-Fragment 2 = 73–94
-
-TS3b:
-Fragment 1 = 1–72
-Fragment 2 = 73–94
+Reproducible IGMH workflow using Multiwfn and VMD/Tachyon for noncovalent-interaction visualization.
 ```
 
-IGMH visualization:
+Suggested topics:
 
 ```text
-Quantity:
-δg_inter
-
-Initial isovalue:
-0.005 a.u.
-
-Coloring:
-sign(λ2)ρ
-
-Example color range:
-−0.05 to +0.05 a.u.
-
-Background:
-white
-
-Rendering:
-VMD + Tachyon
+multiwfn, igmh, vmd, computational-chemistry, quantum-chemistry, noncovalent-interactions, scientific-visualization
 ```
-
-The exact VMD sphere scale, bond radius, opacity, and camera settings used for a final published figure should be recorded directly from the corresponding `.tcl` rendering script to ensure full reproducibility.
-
----
-
-## Software
-
-Multiwfn — Tian Lu and Feiwu Chen,
-J. Comput. Chem. 2012, 33, 580–592.
-
-## Official website
-
-See the official Multiwfn website for software download and documentation.
-
-This repository documents a reproducible IGMH workflow based on Multiwfn-generated numerical output and VMD/Tachyon rendering.
