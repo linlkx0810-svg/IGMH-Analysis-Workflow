@@ -23,7 +23,7 @@ Surface coloring quantity:
 - sign(lambda2)rho
 
 Example shared sign(lambda2)rho color range:
-- -0.04 to +0.04 a.u.
+- -0.05 to +0.05 a.u.
 
 Color interpretation:
 - blue: attractive interaction
@@ -39,3 +39,14 @@ Rendering requirements:
 
 Note:
 Exact final VMD display settings should be taken from scripts/render_IGMH.tcl for complete reproducibility.
+
+Current VMD/Tachyon rendering template:
+- Image size: 2400 x 2400 px per panel
+- Projection: Orthographic
+- delta-g_inter isovalue: 0.005 a.u.
+- sign(lambda2)rho color range: -0.05 to +0.05 a.u.
+- Molecular representation: CPK 0.500000 0.170000 32.000000 28.000000
+- IGMH material opacity: 0.60
+- View: rotate x 62; rotate y -28; rotate z 34; scale 0.213
+- TS3a screen translation: 0.05 -0.01 0.00
+- TS3b screen translation: 0.01 0.02 0.00

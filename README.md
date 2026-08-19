@@ -6,6 +6,87 @@ The example below was developed for comparing two transition structures, `TS3a` 
 
 ---
 
+## Semi-automatic usage
+
+This repository includes a Python wrapper, `run_workflow.py`, for a semi-automatic
+workflow. It does not calculate or modify molecular structures itself. It only
+checks files, launches Multiwfn, launches VMD/Tachyon, converts images, and
+combines the clean panels.
+
+### Quick start
+
+1. Put your Gaussian formatted checkpoint files in `input/`:
+
+```text
+input/TS3a_SP_PCM.fchk
+input/TS3b_SP_PCM.fchk
+```
+
+2. Make sure `Multiwfn` and `vmd` are available in your terminal `PATH`.
+
+3. Run:
+
+```bash
+python run_workflow.py
+```
+
+The default workflow uses:
+
+```text
+Fragment 1 = atoms 1-72
+Fragment 2 = atoms 73-94
+delta-g_inter isovalue = 0.005 a.u.
+sign(lambda2)rho color range = -0.05 to +0.05 a.u.
+```
+
+Expected clean outputs:
+
+```text
+figures/TS3a_IGMH_clean.png
+figures/TS3b_IGMH_clean.png
+figures/TS3a_vs_TS3b_IGMH_clean.png
+```
+
+Generated Multiwfn cube files and logs are written to:
+
+```text
+output/TS3a_IGMH_files/
+output/TS3b_IGMH_files/
+```
+
+### Useful options
+
+Use explicit executable paths if they are not in `PATH`:
+
+```bash
+python run_workflow.py --multiwfn "C:/path/to/Multiwfn.exe" --vmd "C:/path/to/vmd.exe"
+```
+
+Render from existing cube files without rerunning Multiwfn:
+
+```bash
+python run_workflow.py --skip-multiwfn
+```
+
+Use a custom Multiwfn menu-input template:
+
+```bash
+python run_workflow.py --multiwfn-input-template parameters/multiwfn_igmh_interfragment.inp
+```
+
+Dry-run the commands before launching external software:
+
+```bash
+python run_workflow.py --dry-run
+```
+
+> Multiwfn menu indices may vary between versions. The included template was
+> prepared from the TS3a/TS3b example workflow. If your Multiwfn version uses a
+> different menu layout, run Multiwfn interactively once, save the corresponding
+> menu sequence, and pass it with `--multiwfn-input-template`.
+
+---
+
 ## 1. Required software
 
 * Gaussian formatted checkpoint file (`.fchk`)
@@ -151,7 +232,7 @@ Example:
 
 ```text
 sign(λ2)ρ range:
--0.04 to +0.04 a.u.
+-0.05 to +0.05 a.u.
 ```
 
 ---
@@ -565,7 +646,7 @@ Coloring:
 sign(λ2)ρ
 
 Example color range:
-−0.04 to +0.04 a.u.
+−0.05 to +0.05 a.u.
 
 Background:
 white
