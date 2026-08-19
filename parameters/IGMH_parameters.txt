@@ -1,0 +1,41 @@
+IGMH workflow parameters
+========================
+
+Software:
+- Multiwfn for IGMH analysis from Gaussian formatted checkpoint files
+- VMD/Tachyon for molecular and isosurface rendering
+
+Input files used in the example workflow:
+- TS3a_SP_PCM.fchk
+- TS3b_SP_PCM.fchk
+
+Fragment definitions used for both structures:
+- Fragment 1: atoms 1-72
+- Fragment 2: atoms 73-94
+
+IGMH quantity visualized:
+- delta-g_inter
+
+Initial delta-g_inter isovalue:
+- 0.005 a.u.
+
+Surface coloring quantity:
+- sign(lambda2)rho
+
+Example shared sign(lambda2)rho color range:
+- -0.04 to +0.04 a.u.
+
+Color interpretation:
+- blue: attractive interaction
+- green: weak / van der Waals interaction
+- red: repulsive / steric interaction
+
+Rendering requirements:
+- Same isovalue for TS3a and TS3b
+- Same sign(lambda2)rho color range for TS3a and TS3b
+- Same atom representation, sphere scale, bond radius, projection, visual scale, and rendering resolution
+- White background
+- No axes, GUI elements, or distracting shadows
+
+Note:
+Exact final VMD display settings should be taken from scripts/render_IGMH.tcl for complete reproducibility.

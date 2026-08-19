@@ -1,0 +1,5 @@
+structure,contact_label,atom_pair,distance_A,interpretation
+TS3a,N...H,N3-H92,2.40,favorable attractive contact
+TS3b,N...H,N3-H86,2.49,favorable attractive contact
+TS3a,favorable contact,H71-C76,2.42,favorable contact; not assigned as C-H...pi without further geometric justification
+TS3b,favorable contact,H71-C75,2.45,favorable contact; not assigned as C-H...pi without further geometric justification

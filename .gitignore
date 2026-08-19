@@ -1,0 +1,19 @@
+# Gaussian / large quantum chemistry files
+*.fchk
+*.chk
+*.wfn
+*.wfx
+*.cub
+*.cube
+*.tga
+
+# Multiwfn temporary/output files that can be regenerated
+*.log
+*.out
+*.tmp
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
