@@ -13,6 +13,14 @@ Fragment definitions used for both structures:
 - Fragment 1: atoms 1-72
 - Fragment 2: atoms 73-94
 
+Fragment customization:
+- Use command-line options for the same fragment definition in all systems:
+  python run_workflow.py --fragment1 1-72 --fragment2 73-94
+- Or edit parameters/fragments.csv for per-system definitions.
+- Multiwfn atom ranges are one-based.
+- VMD center_selection values are optional and use zero-based VMD atom indices.
+- Use --auto-center-fragments only when you want VMD centering to follow the custom fragment ranges.
+
 IGMH quantity visualized:
 - delta-g_inter
 

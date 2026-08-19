@@ -7,6 +7,10 @@ if {[llength $argv] < 3} {
 set system_name [lindex $argv 0]
 set cubedir [lindex $argv 1]
 set outfile [lindex $argv 2]
+set center_selection ""
+if {[llength $argv] > 3} {
+    set center_selection [lindex $argv 3]
+}
 
 set img_w 2400
 set img_h 2400
@@ -81,16 +85,36 @@ proc apply_refined_view {target} {
     }
 }
 
-proc render_one {target cubedir outfile} {
+proc center_on_selection {selection_text} {
+    if {$selection_text eq ""} {
+        return
+    }
+    set iface [atomselect top $selection_text]
+    if {[$iface num] == 0} {
+        puts "Warning: center_selection matched no atoms: $selection_text"
+        $iface delete
+        return
+    }
+    set c [measure center $iface weight none]
+    $iface delete
+    translate to 0 0 0
+    translate by [vecscale -1.0 $c]
+}
+
+proc render_one {target cubedir outfile center_selection} {
     mol delete all
     mol new "$cubedir/sl2r.cub" type cube waitfor all
     mol addfile "$cubedir/dg_inter.cub" type cube waitfor all
     apply_refined_reps
     apply_refined_view $target
+    center_on_selection $center_selection
     display update
     render TachyonInternal $outfile
 }
 
 puts "Rendering $system_name from $cubedir"
-render_one $system_name $cubedir $outfile
+if {$center_selection ne ""} {
+    puts "Center selection: $center_selection"
+}
+render_one $system_name $cubedir $outfile $center_selection
 quit

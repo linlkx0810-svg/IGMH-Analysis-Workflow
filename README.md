@@ -62,6 +62,44 @@ Use explicit executable paths if they are not in `PATH`:
 python run_workflow.py --multiwfn "C:/path/to/Multiwfn.exe" --vmd "C:/path/to/vmd.exe"
 ```
 
+Customize the same fragment definition for all systems:
+
+```bash
+python run_workflow.py --fragment1 1-60 --fragment2 61-94
+```
+
+Customize fragments separately for each system by editing `parameters/fragments.csv`:
+
+```csv
+system,fragment1,fragment2,center_selection
+TS3a,1-72,73-94,
+TS3b,1-72,73-94,
+```
+
+Then run:
+
+```bash
+python run_workflow.py --fragments-file parameters/fragments.csv
+```
+
+The optional `center_selection` column is a VMD atom selection used only for
+render centering. Leave it blank for the TS3a/TS3b default view. For another
+system, you may use a VMD selection such as:
+
+```text
+index 0 to 71 72 to 93
+```
+
+Remember that Multiwfn atom ranges are one-based, while VMD `index` selections
+are zero-based.
+
+If you want the script to automatically center each rendering on `fragment1`
+plus `fragment2` when `center_selection` is blank, add:
+
+```bash
+python run_workflow.py --fragments-file parameters/fragments.csv --auto-center-fragments
+```
+
 Render from existing cube files without rerunning Multiwfn:
 
 ```bash

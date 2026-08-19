@@ -9,9 +9,11 @@ checks files, launches programs, converts images, and combines panels.
 from __future__ import annotations
 
 import argparse
+import csv
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -25,6 +27,13 @@ TS3_PANEL_CROPS = {
     "TS3a": (0, 194, 2260, 2294),
     "TS3b": (44, 25, 2304, 2125),
 }
+
+
+@dataclass(frozen=True)
+class FragmentConfig:
+    fragment1: str
+    fragment2: str
+    center_selection: str | None = None
 
 
 def posix_path(path: Path) -> str:
@@ -70,6 +79,55 @@ def multiwfn_input(fragment1: str, fragment2: str) -> str:
 def read_template(path: Path, fragment1: str, fragment2: str) -> str:
     text = path.read_text(encoding="utf-8")
     return text.replace("{fragment1}", fragment1).replace("{fragment2}", fragment2)
+
+
+def read_fragment_file(path: Path) -> dict[str, FragmentConfig]:
+    """Read per-system fragment definitions from CSV.
+
+    Required columns: system, fragment1, fragment2
+    Optional column: center_selection
+    """
+    configs: dict[str, FragmentConfig] = {}
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        required = {"system", "fragment1", "fragment2"}
+        if not reader.fieldnames or not required.issubset(reader.fieldnames):
+            raise ValueError(f"{path} must contain columns: system, fragment1, fragment2")
+        for row in reader:
+            system = (row.get("system") or "").strip()
+            if not system:
+                continue
+            center_selection = (row.get("center_selection") or "").strip() or None
+            configs[system] = FragmentConfig(
+                fragment1=(row["fragment1"] or "").strip(),
+                fragment2=(row["fragment2"] or "").strip(),
+                center_selection=center_selection,
+            )
+    return configs
+
+
+def default_fragment_configs(systems: dict[str, str], fragment1: str, fragment2: str) -> dict[str, FragmentConfig]:
+    return {system: FragmentConfig(fragment1=fragment1, fragment2=fragment2) for system in systems}
+
+
+def fragment_to_vmd_indices(fragment: str) -> str:
+    """Convert one-based Multiwfn atom ranges such as 1-72,80,85 to VMD indices."""
+    tokens = fragment.replace("–", "-").replace("—", "-").replace(",", " ").split()
+    parts: list[str] = []
+    for token in tokens:
+        if "-" in token:
+            start_text, end_text = token.split("-", 1)
+            start = int(start_text)
+            end = int(end_text)
+            if start <= 0 or end <= 0 or end < start:
+                raise ValueError(f"Invalid atom range: {token}")
+            parts.append(f"{start - 1} to {end - 1}")
+        else:
+            atom = int(token)
+            if atom <= 0:
+                raise ValueError(f"Invalid atom index: {token}")
+            parts.append(str(atom - 1))
+    return "index " + " ".join(parts)
 
 
 def resolve_input_file(input_dir: Path, filename: str) -> Path:
@@ -136,8 +194,16 @@ def run_multiwfn(
     ensure_cube_outputs(system, cubedir)
 
 
-def run_vmd(system: str, cubedir: Path, out_tga: Path, vmd: str, dry_run: bool) -> None:
-    out_tga.parent.mkdir(parents=True, exist_ok=True)
+def run_vmd(
+    system: str,
+    cubedir: Path,
+    out_tga: Path,
+    vmd: str,
+    center_selection: str | None,
+    dry_run: bool,
+) -> None:
+    if not dry_run:
+        out_tga.parent.mkdir(parents=True, exist_ok=True)
     script = ROOT / "scripts" / "render_IGMH.tcl"
     cmd = [
         vmd,
@@ -150,6 +216,8 @@ def run_vmd(system: str, cubedir: Path, out_tga: Path, vmd: str, dry_run: bool) 
         posix_path(cubedir),
         posix_path(out_tga),
     ]
+    if center_selection:
+        cmd.append(center_selection)
     print(f"[{system}] Rendering with VMD/Tachyon")
     print("  " + " ".join(cmd))
     if dry_run:
@@ -268,6 +336,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--fragment1", default="1-72", help="Fragment 1 atom range passed to Multiwfn.")
     parser.add_argument("--fragment2", default="73-94", help="Fragment 2 atom range passed to Multiwfn.")
+    parser.add_argument(
+        "--fragments-file",
+        type=Path,
+        help="CSV with per-system fragment definitions: system,fragment1,fragment2[,center_selection].",
+    )
+    parser.add_argument(
+        "--auto-center-fragments",
+        action="store_true",
+        help="If center_selection is blank, center VMD rendering on fragment1+fragment2.",
+    )
     parser.add_argument("--multiwfn", default="Multiwfn", help="Multiwfn executable name or path.")
     parser.add_argument("--vmd", default="vmd", help="VMD executable name or path.")
     parser.add_argument(
@@ -286,6 +364,14 @@ def main(argv: list[str] | None = None) -> int:
     output_dir = (ROOT / args.output_dir).resolve() if not args.output_dir.is_absolute() else args.output_dir
     figures_dir = (ROOT / args.figures_dir).resolve() if not args.figures_dir.is_absolute() else args.figures_dir
     systems = parse_systems(args.systems)
+    fragment_configs = default_fragment_configs(systems, args.fragment1, args.fragment2)
+    if args.fragments_file:
+        fragments_path = args.fragments_file if args.fragments_file.is_absolute() else ROOT / args.fragments_file
+        file_configs = read_fragment_file(fragments_path)
+        for system in systems:
+            if system not in file_configs:
+                raise ValueError(f"{fragments_path} has no fragment row for system {system!r}")
+        fragment_configs = {system: file_configs[system] for system in systems}
 
     multiwfn = find_executable(args.multiwfn) or args.multiwfn
     vmd = find_executable(args.vmd) or args.vmd
@@ -295,16 +381,26 @@ def main(argv: list[str] | None = None) -> int:
     if not args.skip_render and not args.dry_run and not find_executable(args.vmd):
         raise FileNotFoundError("VMD executable was not found. Add it to PATH or pass --vmd PATH.")
 
-    if args.multiwfn_input_template:
-        menu_text = read_template(args.multiwfn_input_template, args.fragment1, args.fragment2)
-    else:
-        menu_text = multiwfn_input(args.fragment1, args.fragment2)
-
     if not args.dry_run:
         figures_dir.mkdir(parents=True, exist_ok=True)
     rendered_pngs: dict[str, Path] = {}
 
     for system, filename in systems.items():
+        fragments = fragment_configs[system]
+        if args.multiwfn_input_template:
+            template_path = (
+                args.multiwfn_input_template
+                if args.multiwfn_input_template.is_absolute()
+                else ROOT / args.multiwfn_input_template
+            )
+            menu_text = read_template(template_path, fragments.fragment1, fragments.fragment2)
+        else:
+            menu_text = multiwfn_input(fragments.fragment1, fragments.fragment2)
+        center_selection = fragments.center_selection
+        if args.auto_center_fragments and not center_selection:
+            center_selection = fragment_to_vmd_indices(f"{fragments.fragment1},{fragments.fragment2}")
+
+        print(f"[{system}] Fragment 1: {fragments.fragment1}; Fragment 2: {fragments.fragment2}")
         cubedir = output_dir / f"{system}_IGMH_files"
         if args.skip_multiwfn:
             print(f"[{system}] Skipping Multiwfn; checking existing cube files in {cubedir}")
@@ -317,7 +413,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.skip_render:
             out_tga = figures_dir / f"{system}_IGMH_clean.tga"
             out_png = figures_dir / f"{system}_IGMH_clean.png"
-            run_vmd(system, cubedir, out_tga, vmd, args.dry_run)
+            run_vmd(system, cubedir, out_tga, vmd, center_selection, args.dry_run)
             convert_image(out_tga, out_png, args.dry_run)
             rendered_pngs[system] = out_png
 
