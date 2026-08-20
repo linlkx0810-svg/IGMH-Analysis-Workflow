@@ -50,9 +50,9 @@ def find_executable(name_or_path: str) -> str | None:
 def multiwfn_input(fragment1: str, fragment2: str) -> str:
     """Default menu sequence for Multiwfn IGMH interfragment analysis.
 
-    This sequence was verified with the TS3a/TS3b example workflow. Record the
-    actual Multiwfn version used from your local Multiwfn banner or generated
-    logs. Other Multiwfn versions/builds may require a different menu sequence.
+    This sequence was audited against the TS3b example output log generated
+    by Multiwfn 2026.1.12. Other Multiwfn versions/builds may require a
+    different menu sequence.
     """
     lines = [
         "20",
@@ -112,7 +112,8 @@ def default_fragment_configs(systems: dict[str, str], fragment1: str, fragment2:
 
 def fragment_to_vmd_indices(fragment: str) -> str:
     """Convert one-based Multiwfn atom ranges such as 1-72,80,85 to VMD indices."""
-    tokens = fragment.replace("–", "-").replace("—", "-").replace(",", " ").split()
+    normalized = fragment.translate(str.maketrans({0x2013: "-", 0x2014: "-", 0x2212: "-"}))
+    tokens = normalized.replace(",", " ").split()
     parts: list[str] = []
     for token in tokens:
         if "-" in token:

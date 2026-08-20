@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this workflow, please cite this repository and the underlying Multiwfn/IGMH/VMD methods."
+title: "IGMH Analysis Workflow"
+type: software
+authors:
+  - family-names: Liu
+    given-names: Lin
+year: 2026
+repository-code: "https://github.com/linlkx0810-svg/IGMH-Analysis-Workflow"
+license: MIT
