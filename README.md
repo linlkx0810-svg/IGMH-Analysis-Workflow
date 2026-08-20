@@ -1,5 +1,7 @@
 # IGMH Analysis Workflow
 
+[![Python tests](https://github.com/linlkx0810-svg/IGMH-Analysis-Workflow/actions/workflows/python-tests.yml/badge.svg)](https://github.com/linlkx0810-svg/IGMH-Analysis-Workflow/actions/workflows/python-tests.yml)
+
 ![IGMH comparison](figures/TS3a_vs_TS3b_IGMH_clean.png)
 
 This repository documents a reproducible workflow for **IGMH (Independent Gradient Model based on Hirshfeld partition)** analysis from Gaussian formatted checkpoint files and clean molecular visualization with **Multiwfn** and **VMD/Tachyon**.
@@ -309,14 +311,3 @@ Official Multiwfn website and documentation:
 
 The MIT license applies to the original scripts and documentation in this repository. Multiwfn and VMD are third-party software distributed under their own terms.
 
-Suggested GitHub repository description:
-
-```text
-Reproducible IGMH workflow using Multiwfn and VMD/Tachyon for noncovalent-interaction visualization.
-```
-
-Suggested topics:
-
-```text
-multiwfn, igmh, vmd, computational-chemistry, quantum-chemistry, noncovalent-interactions, scientific-visualization
-```
