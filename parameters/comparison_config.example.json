@@ -1,0 +1,19 @@
+{
+  "reference_system": "ReferenceLabel",
+  "panel_order": ["ReferenceLabel", "TargetLabel"],
+  "alignment_mappings": {
+    "TargetLabel": {
+      "reference_atoms": [1, 2, 3, 4],
+      "target_atoms": [1, 2, 3, 4]
+    }
+  },
+  "center_atoms": [1, 2, 3, 4],
+  "projection": "Orthographic",
+  "screen_span": 1.72,
+  "view_matrix": [
+    [1, 0, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1]
+  ]
+}

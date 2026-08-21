@@ -6,6 +6,8 @@
 
 This repository documents a reproducible workflow for **IGMH (Independent Gradient Model based on Hirshfeld partition)** analysis from Gaussian formatted checkpoint files and clean molecular visualization with **Multiwfn** and **VMD/Tachyon**.
 
+It should be treated as a validated semi-general IGMH workflow: it automates auditable file generation, rendering, and validation steps, but it does not provide fully automatic scientific interpretation.
+
 The numerical workflow is generalizable. The bundled camera, panel crop, and screen-translation settings are optimized for the `TS3a`/`TS3b` example and may require adjustment for other molecular systems.
 
 ## Scope
@@ -21,7 +23,7 @@ Gaussian .fchk -> Multiwfn IGMH cubes -> VMD/Tachyon rendering -> clean comparis
 - Python >= 3.10
 - Multiwfn
 - VMD with Tachyon
-- Pillow, installed with `pip install -r requirements.txt`
+- Pillow and NumPy, installed with `pip install -r requirements.txt`
 
 ## Tested Environment
 
@@ -169,6 +171,26 @@ To use explicit executable paths:
 ```bash
 python run_workflow.py --multiwfn "C:/path/to/Multiwfn.exe" --vmd "C:/path/to/vmd.exe"
 ```
+## Validation and Comparison Workflow
+
+Successful file generation is not the same as a validated scientific analysis. The runner records stage-level status in `output/run_manifest.json` and can enforce stricter checks when requested.
+
+Useful validation modes:
+
+```bash
+python run_workflow.py --validate-only --fragments-file parameters/fragments.csv
+python run_workflow.py --skip-multiwfn --pair-analysis --strict
+python run_workflow.py --skip-render --panel-order TS5R TS5S --no-panel-labels
+python run_workflow.py --skip-multiwfn --comparison-config parameters/comparison_config.example.json
+```
+
+Validation checks that per-system fragments are non-empty, non-overlapping, duplicate-free, and within the `.fchk` atom count. It reports atoms that are not assigned to either fragment instead of guessing missing fragments automatically.
+
+For atom-pair analysis, `--pair-analysis` requires completed Multiwfn integration, non-empty `atmdg.txt` and `IBSIW.txt`, and parseable atom-pair rows before exporting `*_atom_pair_IGMH.csv`. A partial integration such as `85.2%` is treated as a failed pair-analysis stage, even if some files exist.
+
+For comparison figures, `--panel-order` lets the user explicitly choose left/right ordering. The workflow never infers favored or less favored transition states from IGMH, delta-Gpair, IBSIW, or image appearance alone.
+
+A reusable Kabsch alignment helper is included for user-defined active-site alignment. The atom mapping must be supplied from chemical knowledge; TS5 atom numbers are intentionally not hard-coded into the source. When `--comparison-config` is used, the VMD renderer applies the Kabsch result as a molecule-level `global_matrix`, so atoms and loaded cube volumes share the same display transform; if this registration cannot be established, the comparison should be treated as failed.
 
 ## Multiwfn Menu Sequence
 
@@ -245,6 +267,10 @@ IGMH-Analysis-Workflow/
 |   `-- TS3a_vs_TS3b_IGMH_labeled.png
 |-- analysis/
 |   `-- example_key_contacts.csv
+|-- igmh_fragments.py
+|-- igmh_pair_parser.py
+|-- igmh_validation.py
+|-- igmh_alignment.py
 |-- tests/
 |   `-- test_workflow.py
 |-- run_workflow.py

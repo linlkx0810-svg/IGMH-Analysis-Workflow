@@ -16,9 +16,22 @@ output/*
 *.log
 *.out
 *.tmp
+atmdg.txt
+IBSIW.txt
+run_manifest*.json
+*_atom_pair_IGMH.csv
+
+# Local TS5 regression/render outputs
+TS5_comparison_pipeline/
+*_TS5*_IGMH*
+s-TS5-*_IGMH*
 
 # OS/editor files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+
+# Python cache
+__pycache__/
+*.py[cod]
